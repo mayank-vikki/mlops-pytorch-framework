@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 class DataPreprocessor:
     def __init__(self, s3_output_bucket=None, s3_output_key_prefix=None):
         """Initialize the DataPreprocessor with configuration"""
-        self.cont_cols = ["transfer_pcnt"]
+        self.cont_cols = ["length","diameter","height","whole_weight","shucked_weight","viscera_weight","shell_weight"]
         self.cat_cols = ["sex"]
         self.target_column = "rings"
         self.feature_config = {}
@@ -316,7 +316,7 @@ def main():
         logger.info("Starting data preprocessing job...")
         
         dtype_dict = {
-            'Sex': str,
+            'sex': str,
             'length': float,
             'diameter': float,
             'height': float,
