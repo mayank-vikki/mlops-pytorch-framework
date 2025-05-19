@@ -318,7 +318,7 @@ Resources:
               OutputArtifacts: 
                 - Name: ModelSourceOutput
               Configuration:
-                BranchName: master
+                BranchName: main
                 RepositoryName: !Ref CodeCommitRepoName
                 PollForSourceChanges: true
               RunOrder: 1
@@ -345,7 +345,7 @@ Resources:
                 - Name: DataSourceOutput
               Configuration:
                 S3Bucket: !Sub data-pytorch-${AWS::Region}-${AWS::AccountId}
-                S3ObjectKey: !Sub input/raw/abalone_pytorch.csv
+                S3ObjectKey: !Sub input/raw/abalone.csv
                 PollForSourceChanges: true
               RunOrder: 1
             - Name: TestSource
