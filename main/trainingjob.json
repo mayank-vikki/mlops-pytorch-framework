@@ -1,0 +1,53 @@
+{
+    "AlgorithmSpecification":{
+        "TrainingImage": "<AccountId>.dkr.ecr.<Region>.amazonaws.com/<ModelName>:latest",
+        "TrainingInputMode": "File"
+    },
+    "RoleArn": "arn:aws:iam::<AccountId>:role/<RoleName>",
+    "OutputDataConfig": {
+        "S3OutputPath": ""
+    },
+    "ResourceConfig": {
+        "InstanceCount": 1,
+        "InstanceType": "ml.m5.xlarge",
+        "VolumeSizeInGB": 30
+    },
+    "TrainingJobName": "",
+    "HyperParameters": {
+    "epochs": "50",
+    "batch_size": "32",
+    "learning_rate": "0.001",
+    "dropout": "0.2",
+    "embedding_dropout": "0.2",
+    "num_layers": "4",
+    "layer_1_neurons": "256",
+    "layer_2_neurons": "128",
+    "layer_3_neurons": "64",
+    "layer_4_neurons": "32",
+    "use_bn": "True",
+    "bn_final": "False",
+    "optimizer": "Adam",
+    "weight_decay": "0.0005",
+    "early_stopping_patience": "5",
+    "early_stopping_min_delta": "0.0005",
+    "gradient_clip_val": "0.5"
+    },
+    "StoppingCondition": {
+        "MaxRuntimeInSeconds": 360000
+    },
+    "InputDataConfig": [
+        {
+            "ChannelName": "training",
+            "DataSource": {
+                "S3DataSource": {
+                    "S3DataType": "S3Prefix",
+                    "S3Uri": "",
+                    "S3DataDistributionType": "FullyReplicated"
+                }
+            },
+            "ContentType": "text/csv",
+            "CompressionType": "None"
+        }
+    ],
+    "Tags": []
+}

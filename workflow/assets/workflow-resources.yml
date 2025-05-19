@@ -1,0 +1,184 @@
+AWSTemplateFormatVersion : 2010-09-09
+
+Transform: AWS::Serverless-2016-10-31
+
+Description: Template to deploy PyTorch-based System Test Workflow resources.
+
+Parameters:
+  ModelName:
+    Type: String
+    Description: 'ML Model to exeucte system tests on'
+    Default: abalone-pytorch
+    
+  PyTorchVersion:
+    Type: String
+    Description: 'PyTorch version for the model'
+    Default: '1.12.1'
+
+Resources:
+  
+  RegisterModelLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-RegisterModelLambda
+      Description: 'Register PyTorch Production Model'
+      Handler: lambda.handler
+      Role: !GetAtt WorkflowExecutionRole.Arn
+      CodeUri: registerModel/
+      Runtime: python3.8
+      MemorySize: 2048
+      Timeout: 300
+      Environment:
+        Variables:
+          PYTORCH_VERSION: !Ref PyTorchVersion
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Sid: InvokeLambda
+              Effect: Allow
+              Action: 
+                - 'lambda:InvokeFunction'
+                - 'lambda:InvokeAsync'
+                - 'sagemaker:CreateModel'
+                - 'sagemaker:CreateModelPackage'
+                - 'sagemaker:CreateModelPackageGroup'
+                - 's3:GetObject'
+                - 's3:PutObject'
+              Resource: '*'
+
+  EvaluateEndpointLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: lambda.handler
+      FunctionName: !Sub ${AWS::StackName}-EvaluateEndpointLambda
+      Description: 'Evaluate SageMaker Endpoint for PyTorch Model'
+      Role: !GetAtt WorkflowExecutionRole.Arn
+      CodeUri: evaluateEndpoint/
+      Runtime: python3.8
+      MemorySize: 2048
+      Timeout: 300
+      Environment:
+        Variables:
+          PYTORCH_VERSION: !Ref PyTorchVersion
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Sid: InvokeLambda
+              Effect: Allow
+              Action:
+                - 'lambda:InvokeFunction'
+                - 'lambda:InvokeAsync'
+              Resource: '*'
+
+  WorkflowExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::StackName}-WorkflowRole
+      Path: '/'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service: 
+                - 'states.amazonaws.com'
+                - 'lambda.amazonaws.com'
+                - 'codebuild.amazonaws.com'
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/CloudWatchEventsFullAccess'
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+        - 'arn:aws:iam::aws:policy/AmazonSageMakerFullAccess'
+
+  WorkflowExecutionPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub ${AWS::StackName}-WorkflowPolicy
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: LambdaLayerPermissions
+            Effect: Allow
+            Action:
+              - 'lambda:PublishLayerVersion'
+              - 'lambda:DeleteLayerVersion'
+              - 'lambda:GetLayerVersion'
+              - 'lambda:ListLayerVersions'
+            Resource: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:*'
+          - Sid: EventsAccess
+            Effect: Allow
+            Action:
+              - 'events:PutTargets'
+              - 'events:DescribeRule'
+              - 'events:PutRule'
+              - 'lambda:InvokeFunction'
+              - 'sagemaker:InvokeEndpoint'
+              - 's3:GetObject'
+              - 's3:PutObject'
+              - 'sagemaker:CreateModel'
+              - 'sagemaker:RegisterModel'
+              - 'sagemaker:Describe*'
+              - 'sagemaker:List*'
+            Resource: '*'
+          - Sid: ResourceAccess
+            Effect: Allow
+            Action:
+              - 'batch:DescribeJobs'
+              - 'batch:SubmitJob'
+              - 'batch:TerminateJob'
+              - 'codebuild:StartBuild'
+              - 'codebuild:StopBuild'
+              - 'codebuild:BatchGetBuilds'
+              - 'codebuild:BatchGetReports'
+              - 'dynamodb:DeleteItem'
+              - 'dynamodb:GetItem'
+              - 'dynamodb:PutItem'
+              - 'dynamodb:UpdateItem'
+              - 'ecs:DescribeTasks'
+              - 'ecs:RunTask'
+              - 'ecs:StopTask'
+              - 'glue:BatchStopJobRun'
+              - 'glue:GetJobRun'
+              - 'glue:GetJobRuns'
+              - 'glue:StartJobRun'
+              - 'iam:PassRole'
+              - 'lambda:InvokeFunction'
+              - 'lambda:InvokeAsync'
+              - 'sns:Publish'
+              - 'sqs:SendMessage'
+              - 's3:GetObject*'
+              - 's3:PutObject*'
+              - 'codepipeline:GetPipelineState'
+            Resource: '*'
+      Roles:
+        - !Ref WorkflowExecutionRole
+
+  WorkflowRoleParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub ${AWS::StackName}-WorkflowExecRole # <--- This is Global & must be unique per region/account ${AWS::StackName} is abalone-pytorch-pipeline-systemtest
+      Type: String
+      Value: !GetAtt WorkflowExecutionRole.Arn
+      Description: 'AWS SageMaker Step Functions workflow execution role arn.'
+  
+  EvaluateEndpointLambdaParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub ${AWS::StackName}-EvaluateEndpoint # <--- This is Global & must be unique per region/account
+      Type: String
+      Value: !GetAtt EvaluateEndpointLambda.Arn
+      Description: 'Arn of the Lambda Function that evaluates the SageMaker Endpoint.'
+  
+  RegisterModelLambdaParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub ${AWS::StackName}-RegisterModel # <--- This is Global & must be unique per region/account
+      Type: String
+      Value: !GetAtt RegisterModelLambda.Arn
+      Description: 'Arn of the Lambda Function that registers the Production Model'
+
+Outputs:
+  WorkflowExecutionRoleArn:
+    Value: !GetAtt WorkflowExecutionRole.Arn

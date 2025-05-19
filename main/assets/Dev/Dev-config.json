@@ -1,0 +1,8 @@
+{
+    "Parameters": {
+        "EndpointInstanceCount": "1",
+        "EndpointInstanceType": "ml.m5.xlarge"
+    }
+}
+  
+  
