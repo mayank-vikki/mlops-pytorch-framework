@@ -12,7 +12,8 @@
     },
     "DefaultArguments": {
         "--job-language": "python",
-        "--additional-python-modules": "torch==2.0.0,numpy==1.21.0,pandas==1.4.0,scikit-learn==1.0.2"
+        "--additional-python-modules": "torch==2.0.0,numpy==1.21.0,pandas==1.4.0,scikit-learn==1.0.2",
+        "--enable-metrics": "true"
     },
     "Timeout": 15,
     "MaxCapacity": 1.0 
