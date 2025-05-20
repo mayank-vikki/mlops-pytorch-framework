@@ -12,6 +12,7 @@
     },
     "DefaultArguments": {
         "--job-language": "python",
+        "--enable-continuous-logging": "true",
         "--additional-python-modules": "torch==2.0.0,numpy==1.21.0,pandas==1.4.0,scikit-learn==1.0.2",
         "--enable-metrics": "true"
     },
