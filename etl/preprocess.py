@@ -206,7 +206,7 @@ class DataPreprocessor:
             logger.info("Saving feature configuration to S3...")
             
             # Save feature config directly to S3 
-            feature_config_key = f"{self.s3_output_key_prefix}/feature_config/feature_config.json"
+            feature_config_key = "feature_config/feature_config.json"
             
             logger.info(f"Uploading feature config to S3: s3://{self.s3_output_bucket}/{feature_config_key}")
             
